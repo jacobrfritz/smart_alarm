@@ -1,13 +1,15 @@
 [project]
-name = "base_python_project"
+name = "smart_alarm"
 version = "0.1.0"
 description = "A default Python project template using uv."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "soco>=0.30.0",
+]
 
 [project.scripts]
-base_python_project = "base_python_project.cli:main"
+smart_alarm = "smart_alarm.cli:main"
 
 [project.optional-dependencies]
 # Analytics & Data Manipulation
@@ -71,7 +73,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B"]
-ignore = []
+ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -22,4 +22,4 @@ typecheck:
 	uv run mypy src
 
 run:
-	uv run base_python_project
+	uv run smart_alarm
