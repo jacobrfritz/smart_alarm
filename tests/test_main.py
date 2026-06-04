@@ -50,5 +50,17 @@ def test_run_alarm_wiring(
         password=config.imap_password,
     )
     mock_generator_class.assert_called_once()
-    mock_manager_class.assert_called_once()
+    mock_manager_class.assert_called_once_with(
+        audio_controller=mock_sonos_class.return_value,
+        message_sender=mock_sender_class.return_value,
+        message_receiver=mock_receiver_class.return_value,
+        problem_generator=mock_generator_class.return_value,
+        recipient=config.recipient_email,
+        audio_uri=config.audio_uri,
+        timeout_seconds=config.timeout_seconds,
+        check_interval_seconds=config.check_interval_seconds,
+        reply_on_failure=config.reply_on_failure,
+        math_problems_count=config.math_problems_count,
+    )
     mock_manager.start_alarm.assert_called_once()
+

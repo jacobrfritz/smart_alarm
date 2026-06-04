@@ -26,6 +26,7 @@ class AlarmManager:
         timeout_seconds: int = 600,
         check_interval_seconds: int = 10,
         reply_on_failure: bool = True,
+        math_problems_count: int = 2,
     ) -> None:
         self.audio_controller = audio_controller
         self.message_sender = message_sender
@@ -36,6 +37,7 @@ class AlarmManager:
         self.timeout_seconds = timeout_seconds
         self.check_interval_seconds = check_interval_seconds
         self.reply_on_failure = reply_on_failure
+        self.math_problems_count = math_problems_count
 
     def start_alarm(self) -> bool:
         """Triggers the alarm sequence.
@@ -61,11 +63,18 @@ class AlarmManager:
             )
 
         # 3. Send initial email notification
-        subject = "Sonos Math Alarm - WAKE UP!"
-        body = (
-            "Time to wake up! To silence the Sonos alarm speaker, "
-            f"reply to this email with the correct answer to this problem:\n\n{problem_text}"
-        )
+        if self.math_problems_count > 1:
+            subject = f"Sonos Math Alarm - WAKE UP! (Problem 1 of {self.math_problems_count})"
+            body = (
+                f"Time to wake up! To silence the Sonos alarm speaker, you must solve {self.math_problems_count} math problems.\n"
+                f"Reply to this email with the correct answer to this first problem:\n\n{problem_text}"
+            )
+        else:
+            subject = "Sonos Math Alarm - WAKE UP!"
+            body = (
+                "Time to wake up! To silence the Sonos alarm speaker, "
+                f"reply to this email with the correct answer to this problem:\n\n{problem_text}"
+            )
         try:
             self.message_sender.send_message(self.recipient, subject, body)
         except Exception as e:
@@ -87,6 +96,7 @@ class AlarmManager:
         # 5. Monitoring and Verification Loop
         start_time = time.time()
         solved = False
+        solved_count = 0
 
         logger.info("Alarm tracking active. Entering email inbox verification loop...")
         while time.time() - start_time < self.timeout_seconds:
@@ -115,11 +125,35 @@ class AlarmManager:
                             )
 
                             if parsed_ans == correct_answer:
+                                solved_count += 1
                                 logger.info(
-                                    "Matching answer received! Solving complete."
+                                    f"Correct answer received! Problems solved: {solved_count} of {self.math_problems_count}"
                                 )
-                                solved = True
-                                break
+                                if solved_count >= self.math_problems_count:
+                                    logger.info("All problems solved successfully!")
+                                    solved = True
+                                    break
+                                else:
+                                    # Generate the next problem
+                                    new_problem, new_answer = (
+                                        self.problem_generator.generate_problem()
+                                    )
+                                    logger.info(
+                                        f"Generating next challenge problem: '{new_problem}' (Target: {new_answer})"
+                                    )
+                                    correct_answer = new_answer
+                                    problem_text = new_problem
+
+                                    # Send next problem notification
+                                    next_subject = f"Sonos Math Alarm - Problem {solved_count + 1} of {self.math_problems_count}"
+                                    next_body = (
+                                        f"Correct! You have solved {solved_count} of {self.math_problems_count} problems.\n"
+                                        f"To silence the Sonos alarm speaker, please solve this next problem:\n\n{new_problem}"
+                                    )
+                                    self.message_sender.send_message(
+                                        self.recipient, next_subject, next_body
+                                    )
+                                    break
                             else:
                                 logger.info("Incorrect answer matched.")
                                 if self.reply_on_failure:
@@ -139,11 +173,13 @@ class AlarmManager:
                                     reply_subject = "Incorrect Answer - Try Again!"
                                     reply_body = (
                                         f"That answer ({parsed_ans}) is incorrect. The Sonos speaker will keep ringing.\n"
+                                        f"You have solved {solved_count} of {self.math_problems_count} problems.\n"
                                         f"Please solve this new problem instead:\n\n{new_problem}"
                                     )
                                     self.message_sender.send_message(
                                         self.recipient, reply_subject, reply_body
                                     )
+                                    break
             except Exception as e:
                 logger.error(f"Error checking email messages during loop step: {e}")
 

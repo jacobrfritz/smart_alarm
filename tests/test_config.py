@@ -13,6 +13,7 @@ def test_load_dotenv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         "SONOS_SPEAKER=Living Room Test\n"
         "TIMEOUT_SECONDS=300\n"
         'SENDER_EMAIL="quoted_sender@test.com"\n'
+        "MATH_PROBLEMS_COUNT=5\n"
         "# Commented key should be ignored\n"
         "# IGNORE_KEY=true\n"
         "INVALID_LINE_NO_EQUALS\n",
@@ -28,6 +29,7 @@ def test_load_dotenv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert os.environ.get("SONOS_SPEAKER") == "Living Room Test"
     assert os.environ.get("TIMEOUT_SECONDS") == "300"
     assert os.environ.get("SENDER_EMAIL") == "quoted_sender@test.com"
+    assert os.environ.get("MATH_PROBLEMS_COUNT") == "5"
     assert "IGNORE_KEY" not in os.environ
 
 
@@ -42,6 +44,22 @@ def test_config_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert config.reply_on_failure is True
     assert config.smtp_port == 587
     assert config.imap_port == 993
+    assert config.math_problems_count == 2
+
+
+def test_config_math_problems_count(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Test valid custom value
+    monkeypatch.setattr(os, "environ", {})
+    monkeypatch.setenv("MATH_PROBLEMS_COUNT", "4")
+    config = Config()
+    assert config.math_problems_count == 4
+
+    # Test invalid string value (should fallback to 2)
+    monkeypatch.setattr(os, "environ", {})
+    monkeypatch.setenv("MATH_PROBLEMS_COUNT", "not-a-number")
+    config = Config()
+    assert config.math_problems_count == 2
+
 
 
 def test_config_validation(monkeypatch: pytest.MonkeyPatch) -> None:

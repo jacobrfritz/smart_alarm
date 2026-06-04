@@ -64,6 +64,7 @@ def test_alarm_manager_success_flow() -> None:
         audio_uri="http://alarm.mp3",
         timeout_seconds=5,
         check_interval_seconds=1,
+        math_problems_count=1,
     )
 
     # 3. Trigger alarm execution
@@ -100,6 +101,7 @@ def test_alarm_manager_timeout_flow() -> None:
         audio_uri="http://alarm.mp3",
         timeout_seconds=2,  # Short timeout for testing
         check_interval_seconds=1,
+        math_problems_count=1,
     )
 
     success = manager.start_alarm()
@@ -147,6 +149,7 @@ def test_alarm_manager_incorrect_answer_regeneration_flow() -> None:
         timeout_seconds=10,
         check_interval_seconds=1,
         reply_on_failure=True,
+        math_problems_count=1,
     )
 
     success = manager.start_alarm()
@@ -171,10 +174,70 @@ def test_alarm_manager_incorrect_answer_regeneration_flow() -> None:
             call(
                 "user@test.com",
                 "Incorrect Answer - Try Again!",
-                "That answer (15) is incorrect. The Sonos speaker will keep ringing.\nPlease solve this new problem instead:\n\nWhat is 30 * 30?",
+                "That answer (15) is incorrect. The Sonos speaker will keep ringing.\nYou have solved 0 of 1 problems.\nPlease solve this new problem instead:\n\nWhat is 30 * 30?",
             ),
         ]
     )
 
     audio_mock.play.assert_called_once()
     audio_mock.stop.assert_called_once()
+
+
+def test_alarm_manager_multiple_problems_success_flow() -> None:
+    audio_mock = MagicMock(spec=AudioControllerInterface)
+    sender_mock = MagicMock(spec=MessageSenderInterface)
+    receiver_mock = MagicMock(spec=MessageReceiverInterface)
+    generator_mock = MagicMock(spec=MathProblemGeneratorInterface)
+
+    # 2. Configure mock outputs
+    generator_mock.generate_problem.side_effect = [
+        ("What is 50 + 50?", 100),
+        ("What is 10 * 10?", 100),
+    ]
+
+    # First get_latest_messages call returns no initial emails to cache
+    # Second call returns the first correct answer
+    # Third call returns the second correct answer
+    receiver_mock.get_latest_messages.side_effect = [
+        [],  # initial check to cache IDs
+        [{"id": "msg_001", "sender": "user@test.com", "body": "100"}],  # first correct answer
+        [{"id": "msg_002", "sender": "user@test.com", "body": "100"}],  # second correct answer
+    ]
+
+    manager = AlarmManager(
+        audio_controller=audio_mock,
+        message_sender=sender_mock,
+        message_receiver=receiver_mock,
+        problem_generator=generator_mock,
+        recipient="user@test.com",
+        audio_uri="http://alarm.mp3",
+        timeout_seconds=5,
+        check_interval_seconds=1,
+        math_problems_count=2,
+    )
+
+    # 3. Trigger alarm execution
+    success = manager.start_alarm()
+
+    assert success is True
+
+    # 4. Verify mock calls
+    assert generator_mock.generate_problem.call_count == 2
+    audio_mock.play.assert_called_once_with("http://alarm.mp3")
+    assert sender_mock.send_message.call_count == 2
+    sender_mock.send_message.assert_has_calls(
+        [
+            call(
+                "user@test.com",
+                "Sonos Math Alarm - WAKE UP! (Problem 1 of 2)",
+                "Time to wake up! To silence the Sonos alarm speaker, you must solve 2 math problems.\nReply to this email with the correct answer to this first problem:\n\nWhat is 50 + 50?",
+            ),
+            call(
+                "user@test.com",
+                "Sonos Math Alarm - Problem 2 of 2",
+                "Correct! You have solved 1 of 2 problems.\nTo silence the Sonos alarm speaker, please solve this next problem:\n\nWhat is 10 * 10?",
+            ),
+        ]
+    )
+    audio_mock.stop.assert_called_once()
+

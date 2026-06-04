@@ -11,30 +11,20 @@ class BasicMathProblemGenerator(MathProblemGeneratorInterface):
 
         Guarantees that division problems evaluate to precise integers.
         """
-        operation = random.choice(["+", "-", "*", "/"])
+        operation = random.choice(["*", "/"])
 
-        if operation == "+":
-            # Add two 3-digit numbers
-            a = random.randint(100, 999)
-            b = random.randint(100, 999)
-            return f"What is {a} + {b}?", a + b
-
-        elif operation == "-":
-            # Subtract two 3-digit numbers, ensuring positive result
-            a = random.randint(100, 999)
-            b = random.randint(100, 999)
-            num1, num2 = max(a, b), min(a, b)
-            return f"What is {num1} - {num2}?", num1 - num2
-
-        elif operation == "*":
-            # Multiply two double-digit numbers
-            a = random.randint(12, 99)
-            b = random.randint(12, 99)
+        if operation == "*":
+            # Multiply two 2-3 digit numbers
+            a = random.randint(10, 999)
+            b = random.randint(10, 999)
             return f"What is {a} * {b}?", a * b
 
         else:  # operation == "/"
-            # Division that yields a whole number
-            divisor = random.randint(11, 50)
-            quotient = random.randint(10, 80)
-            dividend = divisor * quotient
-            return f"What is {dividend} / {divisor}?", quotient
+            # Division that yields a whole number, where operands are 2-3 digit numbers
+            while True:
+                divisor = random.randint(10, 999)
+                quotient = random.randint(2, 99)
+                dividend = divisor * quotient
+                if 10 <= dividend <= 999 and 10 <= divisor <= 999:
+                    return f"What is {dividend} / {divisor}?", quotient
+

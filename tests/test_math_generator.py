@@ -31,26 +31,18 @@ def test_generate_problem_format() -> None:
         a, b = terms[0], terms[1]
 
         # Verify math correctness
-        if operator == "+":
-            assert answer == a + b
-            assert 100 <= a <= 999
-            assert 100 <= b <= 999
-        elif operator == "-":
-            assert answer == a - b
-            assert a >= b
-            assert 100 <= a <= 999
-            assert 100 <= b <= 999
-        elif operator == "*":
+        if operator == "*":
             assert answer == a * b
-            assert 12 <= a <= 99
-            assert 12 <= b <= 99
+            assert 10 <= a <= 999
+            assert 10 <= b <= 999
         elif operator == "/":
             assert answer == a / b
             # Division answer must be an exact integer quotient
             assert int(answer) == answer
             assert a % b == 0
-            assert 11 <= b <= 50
-            assert 10 <= answer <= 80
+            assert 10 <= a <= 999
+            assert 10 <= b <= 999
+            assert 2 <= answer <= 99
 
-    # Ensure all four mathematical operators are generated over the test distribution
-    assert operations_observed == {"+", "-", "*", "/"}
+    # Ensure only multiplication and division are generated
+    assert operations_observed == {"*", "/"}

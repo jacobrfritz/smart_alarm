@@ -53,6 +53,7 @@ def run_alarm(config: Config) -> bool:
         timeout_seconds=config.timeout_seconds,
         check_interval_seconds=config.check_interval_seconds,
         reply_on_failure=config.reply_on_failure,
+        math_problems_count=config.math_problems_count,
     )
 
     return manager.start_alarm()

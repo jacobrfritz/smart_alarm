@@ -67,6 +67,10 @@ class Config:
             "1",
             "yes",
         )
+        try:
+            self.math_problems_count: int = int(os.getenv("MATH_PROBLEMS_COUNT", "2"))
+        except ValueError:
+            self.math_problems_count = 2
 
     def validate(self) -> None:
         """Validates that crucial settings are filled in to run the alarm."""
